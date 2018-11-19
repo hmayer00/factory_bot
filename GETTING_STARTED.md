@@ -1052,6 +1052,13 @@ You can also specify the strategy used for linting:
 FactoryBot.lint strategy: :build
 ```
 
+Verbose linting will include full backtraces for each error, which can be
+helpful for debugging:
+
+```ruby
+FactoryBot.lint verbose: :true
+```
+
 Custom Construction
 -------------------
 

@@ -60,12 +60,11 @@ module FactoryBot
   # options:
   #   traits: true - to lint traits as well as factories
   #   strategy: :create - to specify the strategy for linting
+  #   verbose: true - to include full backtraces for each linting error
   def self.lint(*args)
     options = args.extract_options!
     factories_to_lint = args[0] || FactoryBot.factories
-    linting_strategy = options[:traits] ? :factory_and_traits : :factory
-    factory_strategy = options[:strategy] || :create
-    Linter.new(factories_to_lint, linting_strategy, factory_strategy).lint!
+    Linter.new(factories_to_lint, options).lint!
   end
 
   class << self

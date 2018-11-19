@@ -1,9 +1,10 @@
 module FactoryBot
   class Linter
-    def initialize(factories, linting_strategy, factory_strategy = :create)
+    def initialize(factories, strategy: :create, traits: false, verbose: false)
       @factories_to_lint = factories
-      @linting_method = "lint_#{linting_strategy}"
-      @factory_strategy = factory_strategy
+      @factory_strategy = strategy
+      @traits = traits
+      @verbose = verbose
       @invalid_factories = calculate_invalid_factories
     end
 
@@ -19,7 +20,7 @@ module FactoryBot
 
     def calculate_invalid_factories
       factories_to_lint.reduce(Hash.new([])) do |result, factory|
-        errors = send(@linting_method, factory)
+        errors = lint(factory)
         result[factory] |= errors unless errors.empty?
         result
       end
@@ -36,6 +37,13 @@ module FactoryBot
         "* #{location} - #{message} (#{@wrapped_error.class.name})"
       end
 
+      def verbose_message
+        <<~MESSAGE
+          #{message}
+            #{@wrapped_error.backtrace.join("\n  ")}
+        MESSAGE
+      end
+
       def location
         @factory.name
       end
@@ -49,6 +57,15 @@ module FactoryBot
 
       def location
         "#{@factory.name}+#{@trait_name}"
+      end
+    end
+
+    def lint(factory)
+      errors = lint_factory(factory)
+      if @traits
+        errors | lint_traits(factory)
+      else
+        errors
       end
     end
 
@@ -75,15 +92,9 @@ module FactoryBot
       result
     end
 
-    def lint_factory_and_traits(factory)
-      errors = lint_factory(factory)
-      errors |= lint_traits(factory)
-      errors
-    end
-
     def error_message
       lines = invalid_factories.map do |_factory, exceptions|
-        exceptions.map(&:message)
+        exceptions.map(&error_message_type)
       end.flatten
 
       <<~ERROR_MESSAGE.strip
@@ -91,6 +102,14 @@ module FactoryBot
 
         #{lines.join("\n")}
       ERROR_MESSAGE
+    end
+
+    def error_message_type
+      if @verbose
+        :verbose_message
+      else
+        :message
+      end
     end
   end
 end
